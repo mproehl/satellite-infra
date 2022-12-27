@@ -1,0 +1,6 @@
+---
+satellite_min_processor_count: 4
+satellite_min_memtotal_mb: 20000
+satellite_min_memtotal_mb_caps: 12000
+satellite_min_distro_vers: '8.6'
+satellite_min_swaptotal_mb: 4000

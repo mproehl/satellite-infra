@@ -1,0 +1,7 @@
+---
+satinfra_checkreqs_min_memtotal_mb: >-
+    {% if inventory_hostname in groups['capsules'] %}
+        {{- satellite_min_memtotal_mb_caps -}}
+    {% else %}
+        {{- satellite_min_memtotal_mb -}}
+    {% endif %}

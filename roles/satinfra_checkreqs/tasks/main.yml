@@ -1,0 +1,46 @@
+---
+
+- name: "Ensure x86_64 architecture"
+  ansible.builtin.assert:
+    that: "ansible_architecture == 'x86_64'"
+
+- name: "Ensure 4-core 2.0 GHz CPU"
+  ansible.builtin.assert:
+    that: "ansible_processor_count >= {{ satellite_min_processor_count }}"
+
+- name: "Ensure version of Red Hat Enterprise Linux >= {{ satellite_min_distro_vers }}"
+  ansible.builtin.assert:
+    that: "ansible_distribution_version is version({{ satellite_min_distro_vers }}, '>=')"
+
+- name: "Ensure a minimum of {{ satinfra_checkreqs_min_memtotal_mb }} GB RAM"
+  ansible.builtin.assert:
+    that: "ansible_memtotal_mb >= {{ satinfra_checkreqs_min_memtotal_mb }}"
+
+- name: "Ensure {{ satellite_min_swaptotal_mb }} GB RAM of swap space"
+  ansible.builtin.assert:
+    that: "ansible_swaptotal_mb >= {{ satellite_min_swaptotal_mb }}"
+
+- name: "Ensure no shortnames in hostnames"
+  ansible.builtin.assert:
+    that: "ansible_nodename == ansible_fqdn"
+
+- name: "Get system umask"
+  ansible.builtin.command:
+    cmd: umask
+  changed_when: false
+  register: _system_umask
+
+- name: "Ensure system umask is 0022"
+  ansible.builtin.assert:
+    that: "_system_umask.stdout =='0022'"
+
+- name: Get SELinux status
+  ansible.builtin.command:
+    cmd: getenforce
+  register: _getenforce_reg
+  changed_when: false
+
+- name: Ensure SELinux is set to enforcing mode
+  ansible.builtin.assert:
+    that:
+      - "(_getenforce_reg.stdout == 'Permissive') or (_getenforce_reg.stdout == 'Enforcing')"
