@@ -1,0 +1,91 @@
+---
+- name: Allow service dns
+  ansible.posix.firewalld:
+    service: dns
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow service http
+  ansible.posix.firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow service https
+  ansible.posix.firewalld:
+    service: https
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow service tftp
+  ansible.posix.firewalld:
+    service: tftp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow UDP port 68
+  ansible.posix.firewalld:
+    port: 68/udp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 8140
+  ansible.posix.firewalld:
+    port: 68/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 5000
+  ansible.posix.firewalld:
+    port: 5000/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 5646
+  ansible.posix.firewalld:
+    port: 5646/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 5647
+  ansible.posix.firewalld:
+    port: 5647/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 5671
+  ansible.posix.firewalld:
+    port: 5671/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 8000
+  ansible.posix.firewalld:
+    port: 8000/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 8080
+  ansible.posix.firewalld:
+    port: 8080/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
+
+- name: Allow TCP port 9090
+  ansible.posix.firewalld:
+    port: 9090/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"

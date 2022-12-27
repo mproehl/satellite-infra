@@ -1,0 +1,18 @@
+---
+- name: Check firewalld status
+  ansible.builtin.command: systemctl status firewalld.service
+  ignore_errors: true
+  changed_when: false
+  register: _sctl_stat_firewalld
+
+- name: Configure firewalld rules for Satellite server
+  ansible.builtin.import_tasks: satellite_rules.yml
+  when:
+    - _sctl_stat_firewalld.rc == 0
+    - "inventory_hostname in groups['satellite']"
+
+- name: Configure firewalld rules for Capsule server
+  ansible.builtin.import_tasks: capsule_rules.yml
+  when:
+    - _sctl_stat_firewalld.rc == 0
+    - "inventory_hostname in groups['capsules']"

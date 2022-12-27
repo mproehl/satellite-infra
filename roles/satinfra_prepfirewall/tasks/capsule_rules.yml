@@ -1,0 +1,10 @@
+---
+- name: Import common rules for Satellite and Capsule
+  ansible.builtin.import_tasks: common_rules.yml
+
+- name: Allow TCP port 8443
+  ansible.posix.firewalld:
+    port: 8443/tcp
+    permanent: true
+    state: enabled
+    zone: "{{ satinfra_prepfirewall_fwzone | default(omit) }}"
