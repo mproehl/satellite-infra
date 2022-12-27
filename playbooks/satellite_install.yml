@@ -1,12 +1,13 @@
 ---
 - name: Install satellite
-  hosts: satellite
+  hosts:
+    - satellite
   environment:
     SATELLITE_USERNAME: "{{ satellite_username | default(omit) }}"
     SATELLITE_PASSWORD: "{{ satellite_password | default(omit) }}"
     SATELLITE_SERVER_URL: "{{ satellite_server_url | default(omit) }}"
     SATELLITE_VALIDATE_CERTS: "{{ satellite_validate_certs|default(true)}}"
-
+  become: true
   tasks:
 
     - name: Check requirements
@@ -16,3 +17,125 @@
     - name: Prepare firewalld
       ansible.builtin.import_role:
         name: satinfra_prepfirewall
+
+    - name: Check if Satellite subscription is already consumed
+      ansible.builtin.command: subscription-manager list  --consumed
+      changed_when: false
+      register: _subscriptionmanager_list_consumed
+
+    - name: Conditionally subscribe with activation key
+      community.general.redhat_subscription:
+        org_id: "{{ satellite_organization_identifier }}"
+        activationkey: "{{ satellite_server_activation_key }}"
+        force_register: true
+        server_proxy_hostname: "{{ http_proxy_hostname|default(omit)}}"
+        server_proxy_port: "{{ http_proxy_port|default(omit)}}"
+      when: "'Red Hat Satellite' not in _subscriptionmanager_list_consumed.stdout"
+
+    - name: Check again for Satellite subscription
+      ansible.builtin.command:
+        cmd: subscription-manager list  --consumed
+      changed_when: false
+      register: _subscriptionmanager_list_consumed
+
+    - name: Ensure Satellite subscription is consumed
+      ansible.builtin.assert:
+        that:
+          - "'Red Hat Satellite' in _subscriptionmanager_list_consumed.stdout"
+
+    - name: Enable required repositories
+      community.general.rhsm_repository:
+        name: "{{ satellite_repositories_for_initial_sat_install }}"
+        state: enabled
+        purge: true
+
+    - name: "Check if dnf module satellite:el8 is enabled"
+      ansible.builtin.command:
+        cmd: "dnf module list --enabled"
+      register: _dnf_module_list
+      changed_when: false
+
+    - name: "Enable dnf module satellite:el8"
+      ansible.builtin.command:
+        cmd: "dnf -y module enable satellite:el8"
+      when: "'satellite' not in _dnf_module_list.stdout"
+
+    - name: Upgrade all packages
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+      register: _dnf_update_reg
+
+    - name: Conditionally reboot after upgrade
+      ansible.builtin.reboot:
+      when: _dnf_update_reg.changed
+
+    - name: Install satellite package
+      ansible.builtin.dnf:
+        name: satellite
+        state: installed
+
+    - name: Ensure directories for temporary cert storage exists
+      ansible.builtin.file:
+        name: "{{ satellite_temporary_tls_directory }}/{{ inventory_hostname  }}"
+        state: directory
+        mode: '0700'
+
+    - name: Copy TLS files
+      ansible.builtin.copy:
+        dest: "{{ satellite_temporary_tls_directory }}/{{ _copy_tls_item[0] }}/{{ _copy_tls_item[1]}}.pem"
+        content: "{{ hostvars[_copy_tls_item[0]][_copy_tls_item[1]] }}"
+        owner: root
+        group: root
+        mode: 0600
+      loop: "{{ lookup('community.general.cartesian', groups['satellite'], _flist) }}"
+      loop_control:
+        loop_var: _copy_tls_item
+      vars:
+        _flist:
+          - "server_cert"
+          - "server_key"
+          - "ca_bundle"
+
+    - name: Include role redhat.satellite_operations.installer
+      ansible.builtin.import_role:
+        name: redhat.satellite_operations.installer
+      vars:
+        satellite_installer_options:
+          - '--foreman-initial-admin-password {{ satellite_password }}'
+          - '--foreman-initial-organization {{ satellite_organization }}'
+          - '--foreman-initial-location {{ satellite_location }}'
+          - '--foreman-initial-admin-locale {{ foreman_initial_admin_locale | default("en") }}'
+          - '--certs-server-cert "{{ satellite_temporary_tls_directory }}/{{ inventory_hostname  }}/server_cert.pem"'
+          - '--certs-server-key "{{ satellite_temporary_tls_directory }}/{{ inventory_hostname  }}/server_key.pem"'
+          - '--certs-server-ca-cert "{{ satellite_temporary_tls_directory }}/{{ inventory_hostname  }}/ca_bundle.pem"'
+        satellite_installer_scenario: satellite
+
+    - name: Conditionally create proxy
+      redhat.satellite.http_proxy:
+        name: "{{ http_proxy_hostname }}"
+        url: "http://{{ http_proxy_hostname }}:{{ http_proxy_port }}"
+        organizations:
+          - "{{ satellite_organization }}"
+        state: present
+        when:
+          - http_proxy_hostname is defined
+          - http_proxy_port is defined
+
+    - name: Configure Settings
+      ansible.builtin.import_role:
+        name: redhat.satellite.settings
+
+    - name: Copy subscription manifest to satellite server
+      ansible.builtin.copy:
+        src: ../files/manifest.zip
+        dest: "/root/manifest.zip"
+        owner: root
+        group: root
+        mode: 0600
+
+    - name: Import subscription manifest
+      ansible.builtin.import_role:
+        name: redhat.satellite.manifest
+      vars:
+        satellite_manifest_path: "/root/manifest.zip"
