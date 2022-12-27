@@ -1,0 +1,16 @@
+---
+all:
+  children:
+    satellite:
+      hosts:
+        satellite001.example.com:
+    capsules:
+      hosts:    
+        capsule001.example.com:
+        capsule002.example.com:
+        capsule003.example.com:
+    managedhosts:
+      hosts:    
+        rhel7.example.com:
+        rhel8.example.com:
+        rhel9.example.com:
