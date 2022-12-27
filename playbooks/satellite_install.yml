@@ -1,0 +1,18 @@
+---
+- name: Install satellite
+  hosts: satellite
+  environment:
+    SATELLITE_USERNAME: "{{ satellite_username | default(omit) }}"
+    SATELLITE_PASSWORD: "{{ satellite_password | default(omit) }}"
+    SATELLITE_SERVER_URL: "{{ satellite_server_url | default(omit) }}"
+    SATELLITE_VALIDATE_CERTS: "{{ satellite_validate_certs|default(true)}}"
+
+  tasks:
+
+    - name: Check requirements
+      ansible.builtin.import_role:
+        name: satinfra_checkreqs
+
+    - name: Prepare firewalld
+      ansible.builtin.import_role:
+        name: satinfra_prepfirewall
