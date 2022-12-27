@@ -1,3 +1,5 @@
 ---
 satellite_organization: Example
 satellite_location: Example
+http_proxy_hostname: 'proxy.example.com'
+http_proxy_port: '8080'
